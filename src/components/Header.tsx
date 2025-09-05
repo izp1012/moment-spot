@@ -1,12 +1,17 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, Plus, Heart, MessageCircle, User } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Search, Plus, Heart, MessageCircle, User, LogOut } from "lucide-react";
 import { CreatePostModal } from "./CreatePostModal";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const Header = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <>
@@ -46,12 +51,33 @@ export const Header = () => {
             <Button variant="ghost" size="icon" className="hover:bg-primary/10">
               <MessageCircle className="h-5 w-5" />
             </Button>
-            <Avatar className="h-8 w-8">
-              <AvatarImage src="" />
-              <AvatarFallback>
-                <User className="h-4 w-4" />
-              </AvatarFallback>
-            </Avatar>
+            
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Avatar className="h-8 w-8 cursor-pointer">
+                    <AvatarImage src="" />
+                    <AvatarFallback>
+                      <User className="h-4 w-4" />
+                    </AvatarFallback>
+                  </Avatar>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => signOut()}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    로그아웃
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigate('/auth')}
+              >
+                로그인
+              </Button>
+            )}
           </div>
         </div>
       </header>

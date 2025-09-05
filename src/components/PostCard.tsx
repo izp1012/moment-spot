@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Heart, MessageCircle, Share, MapPin, MoreHorizontal } from "lucide-react";
+import { Heart, MessageCircle, Share, MapPin, MoreHorizontal, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ImageModal } from "./ImageModal";
 
 interface PostCardProps {
   post: {
@@ -25,6 +27,8 @@ interface PostCardProps {
 export const PostCard = ({ post }: PostCardProps) => {
   const [isLiked, setIsLiked] = useState(post.isLiked || false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const navigate = useNavigate();
 
   const handleLike = () => {
     setIsLiked(!isLiked);
@@ -37,7 +41,9 @@ export const PostCard = ({ post }: PostCardProps) => {
         <div className="flex items-center space-x-3">
           <Avatar className="h-10 w-10">
             <AvatarImage src={post.user.avatar} />
-            <AvatarFallback>{post.user.name[0]}</AvatarFallback>
+            <AvatarFallback>
+              <User className="h-4 w-4" />
+            </AvatarFallback>
           </Avatar>
           <div>
             <h3 className="font-semibold text-sm">{post.user.name}</h3>
@@ -58,7 +64,8 @@ export const PostCard = ({ post }: PostCardProps) => {
           <img
             src={post.images[currentImageIndex]}
             alt={`${post.location} - ${currentImageIndex + 1}`}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover cursor-pointer"
+            onClick={() => setIsImageModalOpen(true)}
           />
         </div>
         
@@ -97,7 +104,10 @@ export const PostCard = ({ post }: PostCardProps) => {
               <Heart className={cn("h-5 w-5", isLiked && "fill-current")} />
             </Button>
             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/10">
-              <MessageCircle className="h-5 w-5" />
+              <MessageCircle 
+                className="h-5 w-5"
+                onClick={() => navigate(`/comments/${post.id}`)}
+              />
             </Button>
             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/10">
               <Share className="h-5 w-5" />
@@ -120,7 +130,10 @@ export const PostCard = ({ post }: PostCardProps) => {
 
         {/* Comments */}
         {post.comments > 0 && (
-          <button className="text-sm text-muted-foreground mt-2 hover:text-foreground">
+          <button 
+            className="text-sm text-muted-foreground mt-2 hover:text-foreground"
+            onClick={() => navigate(`/comments/${post.id}`)}
+          >
             댓글 {post.comments}개 모두 보기
           </button>
         )}
@@ -128,6 +141,13 @@ export const PostCard = ({ post }: PostCardProps) => {
         {/* Timestamp */}
         <p className="text-xs text-muted-foreground mt-2">{post.timestamp}</p>
       </div>
+
+      <ImageModal
+        images={post.images}
+        initialIndex={currentImageIndex}
+        open={isImageModalOpen}
+        onOpenChange={setIsImageModalOpen}
+      />
     </Card>
   );
 };
