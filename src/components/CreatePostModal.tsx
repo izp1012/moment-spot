@@ -5,37 +5,71 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { MapPin, Camera, X } from "lucide-react";
+import { apiService } from "@/services/api";
+import { useToast } from "@/hooks/use-toast";
 
 interface CreatePostModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onPostCreated?: () => void;
 }
 
-export const CreatePostModal = ({ open, onOpenChange }: CreatePostModalProps) => {
+export const CreatePostModal = ({ open, onOpenChange, onPostCreated }: CreatePostModalProps) => {
   const [images, setImages] = useState<string[]>([]);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [location, setLocation] = useState("");
   const [caption, setCaption] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
-      const newImages = Array.from(files).map(file => URL.createObjectURL(file));
+      const fileArray = Array.from(files);
+      const newImages = fileArray.map(file => URL.createObjectURL(file));
       setImages(prev => [...prev, ...newImages]);
+      setImageFiles(prev => [...prev, ...fileArray]);
     }
   };
 
   const removeImage = (index: number) => {
     setImages(prev => prev.filter((_, i) => i !== index));
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = () => {
-    // Here you would typically send the data to your backend
-    console.log({ images, location, caption });
-    onOpenChange(false);
-    // Reset form
-    setImages([]);
-    setLocation("");
-    setCaption("");
+  const handleSubmit = async () => {
+    if (!caption.trim() || imageFiles.length === 0) return;
+
+    setIsSubmitting(true);
+    try {
+      await apiService.createPost({
+        content: caption.trim(),
+        location: location.trim() || undefined,
+        images: imageFiles,
+      });
+
+      toast({
+        title: "게시글 작성 완료",
+        description: "게시글이 성공적으로 작성되었습니다.",
+      });
+
+      // Reset form
+      setImages([]);
+      setImageFiles([]);
+      setLocation("");
+      setCaption("");
+      onOpenChange(false);
+      onPostCreated?.();
+    } catch (error) {
+      console.error('Error creating post:', error);
+      toast({
+        title: "오류",
+        description: "게시글 작성에 실패했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -131,10 +165,10 @@ export const CreatePostModal = ({ open, onOpenChange }: CreatePostModalProps) =>
             </Button>
             <Button 
               onClick={handleSubmit}
-              disabled={images.length === 0 || !location.trim()}
+              disabled={imageFiles.length === 0 || !caption.trim() || isSubmitting}
               className="bg-gradient-primary hover:opacity-90"
             >
-              공유하기
+              {isSubmitting ? "업로드 중..." : "공유하기"}
             </Button>
           </div>
         </div>

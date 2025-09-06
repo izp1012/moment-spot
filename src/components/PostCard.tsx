@@ -14,9 +14,10 @@ interface PostCardProps {
       name: string;
       avatar?: string;
     };
-    location: string;
+    location?: string;
     images: string[];
-    caption: string;
+    content: string;
+    caption?: string;
     likes: number;
     comments: number;
     timestamp: string;
@@ -47,10 +48,12 @@ export const PostCard = ({ post }: PostCardProps) => {
           </Avatar>
           <div>
             <h3 className="font-semibold text-sm">{post.user.name}</h3>
-            <div className="flex items-center text-xs text-muted-foreground">
-              <MapPin className="h-3 w-3 mr-1" />
-              {post.location}
-            </div>
+            {post.location && (
+              <div className="flex items-center text-xs text-muted-foreground">
+                <MapPin className="h-3 w-3 mr-1" />
+                {post.location}
+              </div>
+            )}
           </div>
         </div>
         <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -124,7 +127,7 @@ export const PostCard = ({ post }: PostCardProps) => {
         <div className="space-y-1">
           <p className="text-sm">
             <span className="font-semibold mr-2">{post.user.name}</span>
-            {post.caption}
+            {post.content || post.caption}
           </p>
         </div>
 

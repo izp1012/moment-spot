@@ -4,51 +4,29 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowLeft, Send, User } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-
-interface Comment {
-  id: string;
-  content: string;
-  created_at: string;
-  user_id: string;
-}
-
-interface Post {
-  id: string;
-  content: string;
-  location: string | null;
-  images: string[];
-  user_id: string;
-}
+import { apiService, Post } from '@/services/api';
+import { useComments } from '@/hooks/useComments';
 
 const Comments = () => {
   const { postId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { toast } = useToast();
   const [post, setPost] = useState<Post | null>(null);
-  const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const { comments, addComment } = useComments(postId || '');
 
   useEffect(() => {
     if (postId) {
       fetchPost();
-      fetchComments();
     }
   }, [postId]);
 
   const fetchPost = async () => {
     try {
-      const { data, error } = await supabase
-        .from('posts')
-        .select('*')
-        .eq('id', postId)
-        .single();
-
-      if (error) throw error;
+      const data = await apiService.getPost(postId!);
       setPost(data);
     } catch (error) {
       console.error('Error fetching post:', error);
@@ -60,41 +38,14 @@ const Comments = () => {
     }
   };
 
-  const fetchComments = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('comments')
-        .select('*')
-        .eq('post_id', postId)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-      setComments(data || []);
-    } catch (error) {
-      console.error('Error fetching comments:', error);
-    }
-  };
-
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newComment.trim() || !user || isSubmitting) return;
+    if (!newComment.trim() || isSubmitting) return;
 
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('comments')
-        .insert([
-          {
-            post_id: postId,
-            user_id: user.id,
-            content: newComment.trim(),
-          }
-        ]);
-
-      if (error) throw error;
-
+      await addComment(newComment.trim());
       setNewComment('');
-      fetchComments();
       toast({
         title: "댓글 작성 완료",
         description: "댓글이 성공적으로 작성되었습니다.",
@@ -160,7 +111,7 @@ const Comments = () => {
               </AvatarFallback>
             </Avatar>
             <div>
-              <p className="font-semibold">사용자</p>
+              <p className="font-semibold">{post.user?.name || '사용자'}</p>
               {post.location && (
                 <p className="text-sm text-muted-foreground">{post.location}</p>
               )}
@@ -197,11 +148,11 @@ const Comments = () => {
                 </Avatar>
                 <div className="flex-1">
                   <div className="bg-muted/50 rounded-lg px-3 py-2">
-                    <p className="font-medium text-sm mb-1">사용자</p>
+                    <p className="font-medium text-sm mb-1">{comment.user?.name || '사용자'}</p>
                     <p className="text-sm">{comment.content}</p>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1 ml-3">
-                    {formatTimeAgo(comment.created_at)}
+                    {formatTimeAgo(comment.createdAt)}
                   </p>
                 </div>
               </div>
@@ -210,44 +161,33 @@ const Comments = () => {
         </div>
 
         {/* Comment Input */}
-        {user ? (
-          <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4">
-            <div className="container mx-auto max-w-2xl">
-              <form onSubmit={handleSubmitComment} className="flex space-x-3">
-                <Avatar className="h-8 w-8 flex-shrink-0">
-                  <AvatarImage src="" />
-                  <AvatarFallback>
-                    <User className="h-4 w-4" />
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 flex space-x-2">
-                  <Input
-                    placeholder="댓글을 입력하세요..."
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button 
-                    type="submit" 
-                    size="icon"
-                    disabled={!newComment.trim() || isSubmitting}
-                  >
-                    <Send className="h-4 w-4" />
-                  </Button>
-                </div>
-              </form>
-            </div>
+        <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4">
+          <div className="container mx-auto max-w-2xl">
+            <form onSubmit={handleSubmitComment} className="flex space-x-3">
+              <Avatar className="h-8 w-8 flex-shrink-0">
+                <AvatarImage src="" />
+                <AvatarFallback>
+                  <User className="h-4 w-4" />
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 flex space-x-2">
+                <Input
+                  placeholder="댓글을 입력하세요..."
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  className="flex-1"
+                />
+                <Button 
+                  type="submit" 
+                  size="icon"
+                  disabled={!newComment.trim() || isSubmitting}
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            </form>
           </div>
-        ) : (
-          <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4">
-            <div className="container mx-auto max-w-2xl text-center">
-              <p className="text-muted-foreground mb-2">댓글을 작성하려면 로그인하세요</p>
-              <Button onClick={() => navigate('/auth')} variant="outline">
-                로그인
-              </Button>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );
