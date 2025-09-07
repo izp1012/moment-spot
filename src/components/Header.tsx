@@ -6,10 +6,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Search, Plus, Heart, MessageCircle, User, LogOut } from "lucide-react";
 import { CreatePostModal } from "./CreatePostModal";
+import { ChatModal } from "./ChatModal";
 import { useAuth } from "@/contexts/AuthContext";
 
 export const Header = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -48,7 +50,12 @@ export const Header = () => {
             <Button variant="ghost" size="icon" className="hover:bg-primary/10">
               <Heart className="h-5 w-5" />
             </Button>
-            <Button variant="ghost" size="icon" className="hover:bg-primary/10">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="hover:bg-primary/10"
+              onClick={() => setIsChatModalOpen(true)}
+            >
               <MessageCircle className="h-5 w-5" />
             </Button>
             
@@ -85,6 +92,11 @@ export const Header = () => {
       <CreatePostModal 
         open={isCreateModalOpen} 
         onOpenChange={setIsCreateModalOpen} 
+      />
+      
+      <ChatModal 
+        open={isChatModalOpen} 
+        onOpenChange={setIsChatModalOpen} 
       />
     </>
   );
